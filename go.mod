@@ -1,3 +1,3 @@
-module github.com/firstrow/tcp_server
+module github.com/nicabreon/socket_server
 
 go 1.13

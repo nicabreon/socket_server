@@ -1,8 +1,10 @@
-package tcp_server
+package socket_server
 
 import (
 	"bufio"
 	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
 	"log"
 	"net"
 )
@@ -113,13 +115,24 @@ func New(address string) *server {
 	return server
 }
 
-func NewWithTLS(address, certFile, keyFile string) *server {
+func NewWithTLS(address string, certFile string, keyFile string, caFile string) *server {
+	caCert, err := ioutil.ReadFile(caFile)
+	enableMTLS := tls.RequireAndVerifyClientCert
+	if err != nil {
+		log.Println("Error loading CA file. Unable to set mTLS config.\r\n", err)
+		enableMTLS = tls.NoClientCert
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		log.Fatal("Error loading certificate files. Unable to create TCP server with TLS functionality.\r\n", err)
 	}
+
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		ClientCAs:    caCertPool,
+		ClientAuth:   enableMTLS,
 	}
 	server := New(address)
 	server.config = config
